@@ -3,6 +3,9 @@ package main.model;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,7 +18,7 @@ public class Post {
     @Type(type = "org.hibernate.type.NumericBooleanType")
     private boolean isActive;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, name = "moderation_status", columnDefinition = "VARCHAR(10) DEFAULT 'NEW'")
+    @Column(nullable = false, name = "moderation_status", columnDefinition = "ENUM('ACCEPTED', 'DECLINED', 'NEW')")
     private ModerationStatus moderationStatus;
     @Column(name = "moderator_id")
     private int moderatorId;
@@ -101,10 +104,46 @@ public class Post {
     public void setViewCount(int viewCount) {
         this.viewCount = viewCount;
     }
-}
 
-enum ModerationStatus {
-    NEW,
-    ACCEPTED,
-    DECLINED
+    public int getLikeCount() {
+        int like = 0;
+        String sql = "select count(*) from post_votes where post_id = " + id + " and post_votes.value = 1";
+        try {
+            Statement s = SQLConnection.getConnection().createStatement();
+            ResultSet r = s.executeQuery(sql);
+            r.next();
+            like = Integer.parseInt(r.getString("count(*)"));
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return like;
+    }
+
+    public int getDislikeCount() {
+        int like = 0;
+        String sql = "select count(*) from post_votes where post_id = " + id + " and post_votes.value = -1";
+        try {
+            Statement s = SQLConnection.getConnection().createStatement();
+            ResultSet r = s.executeQuery(sql);
+            r.next();
+            like = Integer.parseInt(r.getString("count(*)"));
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return like;
+    }
+
+    public int getCommentCount() {
+        int comment = 0;
+        String sql = "select count(*) from post_comments where post_id = " + id;
+        try {
+            Statement s = SQLConnection.getConnection().createStatement();
+            ResultSet r = s.executeQuery(sql);
+            r.next();
+            comment = Integer.parseInt(r.getString("count(*)"));
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return comment;
+    }
 }
