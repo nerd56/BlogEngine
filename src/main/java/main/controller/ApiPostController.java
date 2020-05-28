@@ -1,20 +1,14 @@
 package main.controller;
 
-
-import main.model.ModerationStatus;
-import main.model.Post;
-import main.model.PostRepository;
-import main.model.UserRepository;
+import main.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import javax.persistence.EntityManager;
+import java.util.*;
 
 @RestController
 public class ApiPostController {
@@ -22,46 +16,86 @@ public class ApiPostController {
     private PostRepository postRepository;
     @Autowired
     private UserRepository userRepository;
-    @GetMapping("/api/post/{offset}&{limit}&{mode}")
-    public HashMap<String, Object> getApiPost(@PathVariable("offset") int offset,
-                                              @PathVariable("limit") int limit,
-                                              @PathVariable("mode") String mode) {
-        HashMap<String, Object> map = new HashMap<>();
-        List<Post> allPosts = new ArrayList<>();
-        postRepository.findAll().forEach(allPosts::add);
+    @Autowired
+    private PostCommentRepository postCommentRepository;
+    @Autowired
+    private TagRepository tagRepository;
 
-        int count = allPosts.size();
-        limit = Math.min(count, limit);
+    @Autowired
+    private EntityManager entityManager;
 
-        if (mode.equals("recent")) allPosts.sort(Comparator.comparing(Post::getTime));
-        else if (mode.equals("best")) allPosts.sort(Comparator.comparing(Post::getLikeCount));
-        else if (mode.equals("popular")) allPosts.sort(Comparator.comparing(Post::getCommentCount));
-        else if (mode.equals("early")) allPosts.sort(Comparator.comparing(Post::getTime).reversed());
+    @GetMapping("/api/post/")
+    public Map<String, Object> getApiPost(@RequestParam("offset") int offset,
+                                              @RequestParam("limit") int limit,
+                                              @RequestParam("mode") String mode) {
+        Map<String, Object> map = new HashMap<>();
+        List<Post> posts = postRepository.getAvailablePosts();
 
-        List<HashMap<String, Object>> posts = new ArrayList<>();
-        for (int i = count-1, c = 0; i >= 0 && c < limit; i--) {
-            Post post = allPosts.get(i);
-            if (post.isActive() && post.getTime().compareTo(LocalDateTime.now()) <= 0 && post.getModerationStatus() == ModerationStatus.ACCEPTED) {
-                HashMap<String, Object> postMap = new HashMap<String, Object>(){
-                    {
-                        put("id", post.getId());
-                        put("time", post.getTime());
-                        put("user", new HashMap<String, Object>(){{put("id", post.getUserId()); put("name", userRepository.findById(post.getUserId()).get().getName());}});
-                        put("title", post.getTitle());
-                        put("announce", post.getText());
-                        put("likeCount", post.getLikeCount());
-                        put("dislikeCount", post.getDislikeCount());
-                        put("commentCount", post.getCommentCount());
-                        put("viewCount", post.getViewCount());
-                    }
-                };
-                posts.add(postMap);
-                c++;
-            }
-        }
+        if (mode.equals("recent")) posts.sort(Comparator.comparing(Post::getTime).reversed());
+        else if (mode.equals("best")) posts.sort(Comparator.comparing(Post::getLikeCount).reversed());
+        else if (mode.equals("popular")) posts.sort(Comparator.comparing(Post::getCommentCount).reversed());
+        else if (mode.equals("early")) posts.sort(Comparator.comparing(Post::getTime));
+
+        int count = posts.size();
+        int end = Math.min(count, offset+limit);
+        List<Map<String, Object>> postResponse = new ArrayList<>();
+        posts.subList(offset, end).forEach(p -> postResponse.add(p.getGeneralInformation(userRepository)));
 
         map.put("count", count);
-        map.put("posts", posts);
+        map.put("posts", postResponse);
+        return map;
+    }
+
+    @GetMapping("/api/post/search")
+    public Map<String, Object> getApiPostSearch(@RequestParam("offset") int offset,
+                                                @RequestParam("limit") int limit,
+                                                @RequestParam("query") String query) {
+        if (query.isEmpty()) return getApiPost(offset, limit, "");
+        Map<String, Object> map = new HashMap<>();
+        List<Post> posts = new ArrayList<>();
+        entityManager.createNativeQuery("select * from (" + query + ") as t where is_active = 1 and moderation_status = 'ACCEPTED' and time <= now()",
+                Post.class).getResultList().forEach(p -> posts.add(((Post) p)));
+
+        int count = posts.size();
+        int end = Math.min(count, offset+limit);
+        List<Map<String, Object>> postResponse = new ArrayList<>();
+        posts.subList(offset, end).forEach(p -> postResponse.add(p.getGeneralInformation(userRepository)));
+
+        map.put("count", count);
+        map.put("posts", postResponse);
+        return map;
+    }
+
+    @GetMapping("/api/post/{id}")
+    public Map<String, Object> getApiPostId(@PathVariable("id") int id) {
+        Post post = postRepository.findById(id).get();
+        Map<String, Object> postResponse = post.getDetailedInformation(userRepository, postCommentRepository, tagRepository);
+        return postResponse;
+    }
+
+    @GetMapping("/api/post/byDate/")
+    public Map<String, Object> getApiPostByDate(@RequestParam("offset") int offset,
+                                                @RequestParam("limit") int limit,
+                                                @RequestParam("date") String date) {
+        Map<String, Object> map = new HashMap<>();
+        List<Map<String, Object>> postsInformation = new ArrayList<>();
+        postRepository.getAvailablePostsByDate(date).forEach(p -> postsInformation.add(p.getGeneralInformation(userRepository)));
+        List<Map<String, Object>> l = postsInformation.subList(offset, Math.min(offset+limit, postsInformation.size()));
+        map.put("count", l.size());
+        map.put("posts", l);
+        return map;
+    }
+
+    @GetMapping("/api/post/byTag/")
+    public Map<String, Object> getApiPostByTag(@RequestParam("offset") int offset,
+                                                @RequestParam("limit") int limit,
+                                                @RequestParam("tag") String tag) {
+        Map<String, Object> map = new HashMap<>();
+        List<Map<String, Object>> postsInformation = new ArrayList<>();
+        postRepository.getAvailablePostsByTag(tag).forEach(p -> postsInformation.add(p.getGeneralInformation(userRepository)));
+        List<Map<String, Object>> l = postsInformation.subList(offset, Math.min(offset+limit, postsInformation.size()));
+        map.put("count", l.size());
+        map.put("posts", l);
         return map;
     }
 }

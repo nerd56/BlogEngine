@@ -1,8 +1,6 @@
 package main.model;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class SQLConnection {
     private static Connection connection;
@@ -15,5 +13,16 @@ public class SQLConnection {
             }
         }
         return connection;
+    }
+    public static String getColumn(String sql) {
+        String str = null;
+        try (Statement s = getConnection().createStatement()) {
+            ResultSet r = s.executeQuery(sql);
+            r.next();
+            str = r.getString(1);
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return str;
     }
 }

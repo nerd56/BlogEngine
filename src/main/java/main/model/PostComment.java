@@ -2,6 +2,8 @@ package main.model;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "post_comments")
@@ -17,6 +19,27 @@ public class PostComment {
     private int postId;
     @Column(nullable = false)
     private LocalDateTime time;
+    @Column(nullable = false, name = "text", columnDefinition = "TEXT")
+    private String text;
+
+    public Map<String, Object> getGeneralInformation(UserRepository userRepository) {
+        User user = userRepository.findById(userId).get();
+        Map<String, Object> map = new HashMap<String, Object>(){{
+            put("id", id);
+            put("time", time);
+            put("text", text);
+            put("user", new HashMap<String, Object>(){{put("id", user.getId()); put("name", user.getName()); put("photo", user.getPhoto());}});
+        }};
+        return map;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 
     public int getId() {
         return id;
