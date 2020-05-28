@@ -12,7 +12,7 @@ public class PostComment {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
     @Column(name = "parent_id")
-    private int parentId;
+    private Integer parentId;
     @Column(name = "user_id", nullable = false)
     private int userId;
     @Column(name = "post_id", nullable = false)

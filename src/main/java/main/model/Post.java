@@ -47,9 +47,8 @@ public class Post {
         List<Tag> tags = new ArrayList<>();
         List<Integer> tagsId = new ArrayList<>();
         try (Statement s = SQLConnection.getConnection().createStatement()) {
-            int i = 1;
             ResultSet r = s.executeQuery(sql);
-            while (r.next()) tagsId.add(r.getInt(i++));
+            while (r.next()) tagsId.add(r.getInt(1));
         } catch (SQLException e) { e.printStackTrace(); }
         tagRepository.findAllById(tagsId).forEach(tags::add);
         return tags;

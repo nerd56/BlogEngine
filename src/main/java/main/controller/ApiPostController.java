@@ -81,7 +81,7 @@ public class ApiPostController {
         List<Map<String, Object>> postsInformation = new ArrayList<>();
         postRepository.getAvailablePostsByDate(date).forEach(p -> postsInformation.add(p.getGeneralInformation(userRepository)));
         List<Map<String, Object>> l = postsInformation.subList(offset, Math.min(offset+limit, postsInformation.size()));
-        map.put("count", l.size());
+        map.put("count", postsInformation.size());
         map.put("posts", l);
         return map;
     }
@@ -94,7 +94,7 @@ public class ApiPostController {
         List<Map<String, Object>> postsInformation = new ArrayList<>();
         postRepository.getAvailablePostsByTag(tag).forEach(p -> postsInformation.add(p.getGeneralInformation(userRepository)));
         List<Map<String, Object>> l = postsInformation.subList(offset, Math.min(offset+limit, postsInformation.size()));
-        map.put("count", l.size());
+        map.put("count", postsInformation.size());
         map.put("posts", l);
         return map;
     }
