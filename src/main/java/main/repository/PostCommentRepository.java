@@ -1,5 +1,6 @@
-package main.model;
+package main.repository;
 
+import main.model.PostComment;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 

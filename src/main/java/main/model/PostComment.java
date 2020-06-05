@@ -1,5 +1,7 @@
 package main.model;
 
+import main.repository.UserRepository;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
