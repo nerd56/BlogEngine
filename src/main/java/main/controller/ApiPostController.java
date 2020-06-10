@@ -1,6 +1,8 @@
 package main.controller;
 
 import main.dto.PostDto;
+import main.repository.PostRepository;
+import main.response.CountListResponse;
 import main.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,12 +19,15 @@ import java.util.List;
 public class ApiPostController {
     @Autowired
     private PostService postService;
+    @Autowired
+    private PostRepository postRepository;
 
     @GetMapping("/")
-    public ResponseEntity<List<PostDto>> getApiPost(@RequestParam("offset") int offset,
-                                              @RequestParam("limit") int limit,
-                                              @RequestParam("mode") String mode) {
+    public ResponseEntity<CountListResponse> getApiPost(@RequestParam("offset") int offset,
+                                                        @RequestParam("limit") int limit,
+                                                        @RequestParam("mode") String mode) {
+        int count = postRepository.getAvailablePostsCount();
         List<PostDto> l = postService.getPosts(offset, limit, mode);
-        return new ResponseEntity<>(l, HttpStatus.OK);
+        return new ResponseEntity<>(new CountListResponse(count, l), HttpStatus.OK);
     }
 }

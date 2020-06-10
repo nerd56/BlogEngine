@@ -3,26 +3,25 @@ package main.mapper;
 import main.dto.PostDto;
 import main.dto.UserDto;
 import main.model.Post;
-import main.repository.PostRepository;
-import main.repository.UserRepository;
+import main.model.PostVote;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class PostMapper {
-    @Autowired
-    private PostRepository postRepository;
-    @Autowired
-    private UserRepository userRepository;
     @Autowired
     private UserMapper userMapper;
 
     public PostDto toDto(Post p) {
         PostDto dto = new PostDto(p.getId(), p.getViewCount(), p.getTitle(), p.getText(), p.getTime());
-        UserDto user = userMapper.toDto(userRepository.findById(p.getUserId()).get());
-        int likeCount = postRepository.getLikeCount(dto.getId());
-        int dislikeCount = postRepository.getDislikeCount(dto.getId());
-        int commentCount = postRepository.getCommentCount(dto.getId());
+        UserDto user = userMapper.toDto(p.getUser());
+        List<PostVote> votes = p.getPostVotes();
+        int dislikeCount = 0;
+        for (PostVote v : votes) if (v.getValue() == -1) dislikeCount++;
+        int likeCount = votes.size()-dislikeCount;
+        int commentCount = p.getPostComments().size();
         dto.setUser(user);
         dto.setLikeCount(likeCount);
         dto.setDislikeCount(dislikeCount);
