@@ -13,12 +13,16 @@ public class PostDto {
     private int dislikeCount;
     private int viewCount;
 
-    public PostDto(int id, int viewCount, String title, String text, LocalDateTime time) {
+    public PostDto(int id, UserDto user, String announce, LocalDateTime time, String title, int commentCount, int likeCount, int dislikeCount, int viewCount) {
         this.id = id;
-        this.viewCount = viewCount;
-        this.title = title;
-        this.announce = text;
+        this.user = user;
+        this.announce = announce;
         this.time = time;
+        this.title = title;
+        this.commentCount = commentCount;
+        this.likeCount = likeCount;
+        this.dislikeCount = dislikeCount;
+        this.viewCount = viewCount;
     }
 
     public int getId() {

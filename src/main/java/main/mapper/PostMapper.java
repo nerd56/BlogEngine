@@ -15,17 +15,12 @@ public class PostMapper {
     private UserMapper userMapper;
 
     public PostDto toDto(Post p) {
-        PostDto dto = new PostDto(p.getId(), p.getViewCount(), p.getTitle(), p.getText(), p.getTime());
         UserDto user = userMapper.toDto(p.getUser());
         List<PostVote> votes = p.getPostVotes();
-        int dislikeCount = 0;
-        for (PostVote v : votes) if (v.getValue() == -1) dislikeCount++;
+        int dislikeCount = (int) votes.stream().filter(v -> v.getValue() == -1).count();
         int likeCount = votes.size()-dislikeCount;
         int commentCount = p.getPostComments().size();
-        dto.setUser(user);
-        dto.setLikeCount(likeCount);
-        dto.setDislikeCount(dislikeCount);
-        dto.setCommentCount(commentCount);
+        PostDto dto = new PostDto(p.getId(), user, p.getText(), p.getTime(), p.getTitle(), commentCount, likeCount, dislikeCount, p.getViewCount());
         return dto;
     }
 }

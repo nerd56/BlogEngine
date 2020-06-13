@@ -22,7 +22,7 @@ public class Post {
     private int moderatorId;
     @Column(name = "user_id", nullable = false)
     private int userId;
-    @Column(nullable = false)
+    @Column(name = "time", nullable = false)
     private LocalDateTime time;
     @Column(nullable = false, columnDefinition = "VARCHAR(255)")
     private String title;
@@ -40,6 +40,21 @@ public class Post {
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private List<PostComment> postComments;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "tag2post",
+            joinColumns = {@JoinColumn(name = "post_id")},
+            inverseJoinColumns = {@JoinColumn(name = "tag_id")}
+    )
+    private List<Tag> tags;
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
+    }
 
     public User getUser() {
         return user;

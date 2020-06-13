@@ -24,15 +24,16 @@ public class PostComment {
     @Column(nullable = false, name = "text", columnDefinition = "TEXT")
     private String text;
 
-    public Map<String, Object> getGeneralInformation(UserRepository userRepository) {
-        User user = userRepository.findById(userId).get();
-        Map<String, Object> map = new HashMap<String, Object>(){{
-            put("id", id);
-            put("time", time);
-            put("text", text);
-            put("user", new HashMap<String, Object>(){{put("id", user.getId()); put("name", user.getName()); put("photo", user.getPhoto());}});
-        }};
-        return map;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getText() {
