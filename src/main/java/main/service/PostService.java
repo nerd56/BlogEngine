@@ -34,56 +34,48 @@ public class PostService {
     @Autowired
     private PostRepository postRepository;
 
-    @Autowired
-    private EntityManager entityManager;
-
     public CountListResponse getPosts(int offset, int limit, String sort) {
         int page = offset / limit;
         List<Post> posts;
-        if (sort.equals("best"))
-            posts = postRepository.getAvailablePostsSortedByLikeCount(PageRequest.of(offset, limit));
-        else if (sort.equals("popular"))
-            posts = postRepository.getAvailablePostsSortedByCommentsCount(PageRequest.of(offset, limit));
-        else if (sort.equals("recent"))
-            posts = postRepository.getAvailablePosts(PageRequest.of(offset, limit, Sort.by("time").descending()));
-        else if (sort.equals("early"))
-            posts = postRepository.getAvailablePosts(PageRequest.of(offset, limit, Sort.by("time")));
-        else
-            return getPosts(offset, limit);
+        switch (sort) {
+            case "best":
+                posts = postRepository.getAvailablePostsSortedByLikeCount(PageRequest.of(page, limit));
+                break;
+            case "popular":
+                posts = postRepository.getAvailablePostsSortedByCommentsCount(PageRequest.of(page, limit));
+                break;
+            case "recent":
+                posts = postRepository.getAvailablePosts(PageRequest.of(page, limit, Sort.by("time").descending()));
+                break;
+            case "early":
+                posts = postRepository.getAvailablePosts(PageRequest.of(page, limit, Sort.by("time")));
+                break;
+            default:
+                return getPosts(offset, limit);
+        }
         int count = postRepository.getAvailablePostsCount();
         return new CountListResponse(count, posts.stream().map(postMapper::toDto).collect(Collectors.toList()));
     }
 
-    public Optional<CountListResponse> getPostsSearch(int offset, int limit, String query) {
-        if (query.isEmpty()) return Optional.of(getPosts(offset, limit));
-        String selectPosts = "SELECT * FROM (" + query + ") as posts WHERE " + PostRepository.postIsAvailable;
-        String selectPostsCount = "SELECT COUNT(*) FROM (" + query + ") as posts WHERE " + PostRepository.postIsAvailable;
-
-        try {
-            int page = offset / limit;
-            Query q = entityManager.createNativeQuery(selectPosts, Post.class);
-            q.setFirstResult(page * limit);
-            q.setMaxResults(limit);
-            List<PostDto> posts = (List<PostDto>) q.getResultList().stream().map(p -> postMapper.toDto((Post) p)).collect(Collectors.toList());
-            int count = ((BigInteger) entityManager.createNativeQuery(selectPostsCount).setMaxResults(1).getResultList().get(0)).intValue();
-            CountListResponse response = new CountListResponse(count, posts);
-            return Optional.of(response);
-        } catch(Exception e) {
-            e.printStackTrace();
-            System.out.println(selectPosts);
-            return Optional.empty();
-        }
+    public CountListResponse getPostsSearch(int offset, int limit, String query) {
+        query = "%"+query+"%";
+        int page = offset/limit;
+        int count = postRepository.getAvailablePostsByQueryCount(query);
+        List<PostDto> posts = postRepository.getAvailablePostsByQuery(query, PageRequest.of(page, limit)).stream().map(postMapper::toDto).collect(Collectors.toList());
+        return new CountListResponse(count, posts);
     }
 
     public Optional<ExtendedPostDto> getPost(int id) {
-        Optional<Post> optionalPost = postRepository.findById(id);
+        Optional<Post> optionalPost = Optional.ofNullable(postRepository.findAvailablePost(id));
         if (!optionalPost.isPresent()) {
             return Optional.empty();
         }
 
         Post post = optionalPost.get();
-
         ExtendedPostDto extendedPostDto = extendedPostMapper.toDto(post);
+
+        post.setViewCount(post.getViewCount()+1);
+        postRepository.save(post);
         return Optional.of(extendedPostDto);
     }
 
@@ -91,9 +83,9 @@ public class PostService {
         int page = offset / limit;
         try {
             LocalDate localDate = LocalDate.parse(date, dtf);
-            List<PostDto> posts = postRepository.getAvailablePosts(localDate, PageRequest.of(page, limit))
+            List<PostDto> posts = postRepository.getAvailablePostsByDate(localDate, PageRequest.of(page, limit))
                     .stream().map(postMapper::toDto).collect(Collectors.toList());
-            int count = postRepository.getAvailablePostsCount(localDate);
+            int count = postRepository.getAvailablePostsByDateCount(localDate);
             CountListResponse response = new CountListResponse(count, posts);
             return Optional.of(response);
         } catch (Exception e) {
@@ -104,8 +96,8 @@ public class PostService {
 
     public CountListResponse getPostsByTag(int offset, int limit, String tag) {
         int page = offset / limit;
-        List<Post> posts = postRepository.getAvailablePosts(tag, PageRequest.of(page, limit));
-        int count = postRepository.getAvailablePostsCount(tag);
+        List<Post> posts = postRepository.getAvailablePostsByTag(tag, PageRequest.of(page, limit));
+        int count = postRepository.getAvailablePostsByTagCount(tag);
         return new CountListResponse(count, posts.stream().map(postMapper::toDto).collect(Collectors.toList()));
     }
 

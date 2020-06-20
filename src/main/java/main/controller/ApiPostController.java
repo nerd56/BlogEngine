@@ -27,11 +27,8 @@ public class ApiPostController {
 
     @GetMapping("/search")
     public ResponseEntity<CountListResponse> getApiPostSearch(@RequestParam("offset") int offset, @RequestParam("limit") int limit, @RequestParam("query") String query) {
-        Optional<CountListResponse> response = postService.getPostsSearch(offset, limit, query);
-        if (response.isPresent()) {
-            return ResponseEntity.status(HttpStatus.OK).body(response.get());
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        CountListResponse response = postService.getPostsSearch(offset, limit, query);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

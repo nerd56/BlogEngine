@@ -6,7 +6,8 @@ insert into posts (id, is_active, moderation_status, moderator_id, user_id, time
     (5, 1, 'ACCEPTED', 1, 1, '2020-04-01', 'abc123', 'post5_text', 55),
     (6, 1, 'ACCEPTED', 1, 2, '2020-04-17', 'abc123', 'post6_text', 64),
     (7, 1, 'ACCEPTED', 1, 2, '2020-04-16', 'abc123', 'post7_text', 9000),
-    (8, 1, 'ACCEPTED', 1, 3, '2020-04-04', 'abc123', 'post8_text', 123);
+    (8, 1, 'ACCEPTED', 1, 3, '2020-04-04', 'abc123', 'post8_text', 123),
+    (9, 1, 'ACCEPTED', 1, 3, '2020-04-04', 'abc123%', 'post9_text', 123);
 
 insert into post_votes (id, post_id, time, user_id, value) values
     (1, 2, '2020-04-11', 1, 1),
